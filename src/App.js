@@ -37,7 +37,7 @@ let offset;
 const appParams = {
 	loader: 'Instanced voxels',
 	threshold: 1,
-	voxels_num: '20000',
+	voxels_num: '10000',
 	scene_anim: true,			//TODO
 	implosion_time: 2000, 		// [ms]
 	explosion_time: 1000, 		// [ms]
@@ -62,7 +62,10 @@ const params = {
 	y_offset: '0',
 	z_offset: '0',
 	LUT: 'viridis',
-	alphaHash: false,
+	alphaHash: true,
+	alpha: 0.5,
+	taa: true,
+	sampleLevel: 2,
 	min_scale_factor: appParams.threshold,	
 	A: 0.3,
 	depth_write: true,
@@ -90,7 +93,11 @@ var sideOptions = {
 	'DoubleSide': THREE.DoubleSide
 };
 
-/*
+///*
+var scannerobj = new THREE.Object3D();
+var scannerobj1= new THREE.Object3D();
+var scannerobj2= new THREE.Object3D();
+var scannerobj3= new THREE.Object3D();
 var config_scanner_vis = {
 	scaner_transparency: 0.5,
 	side: sideOptions['DoubleSide'],
@@ -113,7 +120,7 @@ var config_scanner_vis = {
 		scannerobj3.visible = ! scannerobj3.visible;
 	}
 };
-*/
+//*/
 
 var config_voxel = {
 	voxel_transparency: 0.1,
@@ -260,13 +267,11 @@ const light2 = new THREE.AmbientLight(0xFFFFC1, appParams.light2); // soft white
 scene.add(light1);
 scene.add(light2);
 
-/*
-var scannerobj = new THREE.Object3D();
-var scannerobj1= new THREE.Object3D();
-var scannerobj2= new THREE.Object3D();
-var scannerobj3= new THREE.Object3D();
-const loader = new GLTFLoader().setPath( 'models_and_data/' );
-loader.load( 'tower_w_2blocks.glb', function ( gltf ) {
+///*
+const parcelPath = new URL('../public/tower_w_2blocks.glb', import.meta.url);
+const loader = new GLTFLoader();//setPath( 'models_and_data/' );
+loader.load( parcelPath.href, function ( gltf ) {
+//loader.load( 'tower_w_2blocks.glb', function ( gltf ) {
 	gltf.scene.traverse(child => {
 		if (child.isMesh) {
 			child.name = "Scanner";
@@ -302,13 +307,13 @@ loader.load( 'tower_w_2blocks.glb', function ( gltf ) {
 
 	scene.add( gltf.scene );
 } );
-*/
+//*/
 
 const helpers = new THREE.Group();
 helpers.add( new THREE.PlaneHelper( clipPlanes[ 0 ], 100 * scale_factor, 0xff0000 ) );
 helpers.add( new THREE.PlaneHelper( clipPlanes[ 1 ], 100 * scale_factor, 0x00ff00 ) );
 helpers.add( new THREE.PlaneHelper( clipPlanes[ 2 ], 100 * scale_factor, 0x0000ff ) );
-helpers.visible = true;
+helpers.visible = false;
 scene.add( helpers );
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -331,8 +336,9 @@ function updateControls() {
 	if (appParams.loader === 'Voxel threshold') thresholdControl = file_loader.add(appParams, 'threshold', 0, 100).name('Voxel threshold');
 	else if (appParams.loader === 'Num of voxels') voxelsNumControl = file_loader.add(appParams, 'voxels_num', appParams.voxels_num).name('# Voxels');
 }
-
-file_loader.add(appParams, 'loader', ['Voxel threshold', 'Num of voxels', 'Instanced voxels']).name('Loader type'); //.onChange(updateControls);
+file_loader.add(appParams, 'loader', ['Voxel threshold', 'Num of voxels', 'Instanced voxels']).name('Loader type');//.onChange(updateControls);
+file_loader.add(appParams, 'threshold', 0, 100).name('Voxel threshold');
+file_loader.add(appParams, 'voxels_num', appParams.voxels_num).name('# Voxels');
 // Call updateControls initially to set the correct control based on the initial value of 'loader'
 //updateControls();
 
@@ -381,7 +387,7 @@ section.add( appParams, 'showHelpers' ).name( 'show helpers' ).onChange( functio
 } );
 section.close();
 
-/*
+//*
 var scanner = gui.addFolder('Scanner');
 scanner.add(config_scanner_vis, 'scaner_transparency', 0, 1).onChange( function ( value ) {;
 	scannerobj.traverse(child => {
@@ -433,7 +439,7 @@ hide.add(config_scanner_vis, 'toggleScaner1').name('Bottom tower');
 hide.add(config_scanner_vis, 'toggleScaner2').name('Right tower');
 hide.add(config_scanner_vis, 'toggleScaner3').name('Left tower');
 scanner.add( config_scanner_vis, 'explode').name('Explode').onChange( function( value ){ explode("Scanner");} );
-*/
+//*/
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////		   FILE LOADER			//////////////////////////////////////////////////
@@ -505,8 +511,8 @@ function loadGenericTexture_instancedMesh(fileTemplate, texture_array, histogram
 
 		var dummy = new THREE.Object3D();
 		dummy.position.set(x * ((params.voxel_size + 0.0) * scale_factor) - (params.width_X/2)*((params.voxel_size + 0.0) * scale_factor), 
-					 			 y * ((params.voxel_size + 0.0) * scale_factor) - (params.width_Y/2)*((params.voxel_size + 0.0) * scale_factor), 
-							 z * ((params.voxel_size + 0.0) * scale_factor) - (params.width_Z/2)*((params.voxel_size + 0.0) * scale_factor));
+			 			   y * ((params.voxel_size + 0.0) * scale_factor) - (params.width_Y/2)*((params.voxel_size + 0.0) * scale_factor), 
+						   z * ((params.voxel_size + 0.0) * scale_factor) - (params.width_Z/2)*((params.voxel_size + 0.0) * scale_factor));
 	 	dummy.updateMatrix();
 		voxelMeshes[index_value].setMatrixAt(index_array[index_value], dummy.matrix);
 	 	index_array[index_value]++;
@@ -541,6 +547,7 @@ function loadGenericTexture(fileTemplate, texture_array) {
 		var x = texture_array[entry].x;
 		var y = texture_array[entry].y;
 		var z = texture_array[entry].z;
+		console.log(x,y,z);
 		var value = texture_array[entry].value;
 		var threshold_value; 
 		if (appParams.loader === 'Voxel threshold') threshold_value = maxValue * appParams.threshold / 100; 
@@ -599,21 +606,24 @@ function opacity_weight(x, maxValue, min, weight) {
 function x_move(fileTemplate, value){
 	scene.traverse((object) => {
 		if (object instanceof THREE.Mesh && object.name === fileTemplate && object.position) {
-			object.position.x = object.userData.finalPosition.x + parseFloat(value,10);
+			if(appParams.loader !== 'Instanced voxels') object.position.x = object.userData.finalPosition.x + parseFloat(value,10);
+			else object.position.x = 0 + parseFloat(value,10);
 		}
 	});
 }
 function y_move(fileTemplate, value){
 	scene.traverse((object) => {
 		if (object instanceof THREE.Mesh && object.name === fileTemplate && object.position) {
-			object.position.y = object.userData.finalPosition.y + parseFloat(value,10);
+			if(appParams.loader !== 'Instanced voxels') object.position.y = object.userData.finalPosition.y + parseFloat(value,10);
+			else object.position.y = 0 + parseFloat(value,10);
 		}
 	});
 }
 function z_move(fileTemplate, value){
 	scene.traverse((object) => {
 		if (object instanceof THREE.Mesh && object.name === fileTemplate && object.position) {
-			object.position.z = object.userData.finalPosition.z + parseFloat(value,10);
+			if(appParams.loader !== 'Instanced voxels') object.position.z = object.userData.finalPosition.z + parseFloat(value,10);
+			else object.position.z = 0 + parseFloat(value,10);
 		}
 	});
 }
@@ -716,11 +726,18 @@ function change_visibility(fileTemplate, value) {
 	});
 }
 
+let needsUpdate = false;
+
 function change_alpha_hash(fileTemplate, value) {
 	params.alphaHash = value;
 	scene.traverse((object) => {
 		if (object instanceof THREE.Mesh && object.name == fileTemplate) {
-			object.alphaHash = params.alphaHash;
+			object.material.alphaHash = params.alphaHash;
+			object.material.transparent = ! params.alphaHash;
+			object.material.depthWrite = params.alphaHash;
+
+			object.material.needsUpdate = true;
+			needsUpdate = true;
 			console.log("HERE ", object.alphaHash);
 		}
 	});
@@ -1040,12 +1057,8 @@ function App() {
 
 		const color = new THREE.Color();
 
-		const params = {
-			alpha: 0.5,
-			alphaHash: true,
-			taa: true,
-			sampleLevel: 2,
-		};
+		//const params = {
+		//};
 
 		init();
 		animate();
@@ -1058,13 +1071,13 @@ function App() {
 
 			//scene = new THREE.Scene();
 
-			const geometry = new THREE.IcosahedronGeometry( 15 * scale_factor, 3 );
+			//const geometry = new THREE.IcosahedronGeometry( 15 * scale_factor, 3 );
 
-			material = new THREE.MeshStandardMaterial( {
-				color: 0xffffff,
-				alphaHash: params.alphaHash,
-				opacity: params.alpha
-			} );
+			//material = new THREE.MeshStandardMaterial( {
+			//	color: 0xffffff,
+			//	alphaHash: params.alphaHash,
+			//	opacity: params.alpha
+			//} );
 
 			/*
 			mesh = new THREE.InstancedMesh( geometry, material, count );
@@ -1084,11 +1097,11 @@ function App() {
 			scene.add( mesh );
 			*/
 
-			const environment = new RoomEnvironment( renderer );
-			const pmremGenerator = new THREE.PMREMGenerator( renderer );
+			//const environment = new RoomEnvironment( renderer );
+			//const pmremGenerator = new THREE.PMREMGenerator( renderer );
 
-			scene.environment = pmremGenerator.fromScene( environment ).texture;
-			environment.dispose();
+			//scene.environment = pmremGenerator.fromScene( environment ).texture;
+			//environment.dispose();
 
 			//
 
@@ -1121,7 +1134,7 @@ function App() {
 
 			var hash = app.addFolder('Alpha hash');
 			hash.add( params, 'alpha', 0, 1 ).onChange( onMaterialUpdate );
-			hash.add( params, 'alphaHash' ).onChange( onMaterialUpdate );
+			//hash.add( params, 'alphaHash' ).onChange( onMaterialUpdate );
 
 			const taaFolder = hash.addFolder( 'Temporal Anti-Aliasing' );
 
@@ -1130,7 +1143,7 @@ function App() {
 				renderPass.enabled = ! params.taa;
 				taaRenderPass.enabled = params.taa;
 
-				renderer.setClearColor(appParams.backgroundColor);
+				//renderer.setClearColor(appParams.backgroundColor);
 
 				sampleLevelCtrl.enable( params.taa );
 
@@ -1290,7 +1303,7 @@ function App() {
 					//var file_gui = gui.addFolder(fileTemplate + " [" + params.width_X + "x" + params.width_Y + "x" + params.width_Z + "]");
 					file_gui.add( params, "voxel_size", params.voxel_size).name("Voxel size [mm]").onFinishChange( function( value ) {change_voxel_size(fileTemplate, value);});
 					file_gui.add( params, 'LUT', ['jet','fire','viridis','5ramps'] ).name( fileTemplate + 'LUT' ).onChange( function( value ){change_LUT(fileTemplate, value);} );
-					/*
+					///*
 					file_gui.add( params, 'depth_write').onChange(function( value ) {
 						scene.traverse(function(child) {
 							if (child instanceof THREE.Mesh && child.name == fileTemplate) child.material.depthWrite = params.depth_write;
@@ -1311,10 +1324,9 @@ function App() {
 							}
 						});
 					} );
-					*/
-					//file_gui.add( params, 'alphaHash' ).name( 'Alpha hash' ).onChange( function( value ){change_alpha_hash(fileTemplate, value);} );
+					//*/
+					file_gui.add( params, 'alphaHash' ).name( 'Alpha hash' ).onChange( function( value ){change_alpha_hash(fileTemplate, value);} );
 					file_gui.add( params, 'min_scale_factor', min_visibility_control, 100 ).step( 0.1 ).name( 'Visibility cut [%]' ).onChange( function( value ){change_min_transp(fileTemplate, value);} );
-					/*
 					file_gui.add( params, 'A', 0, 100 ).step( 0.01 ).name( 'weight' ).onChange( function( value ){change_transp_scale(fileTemplate, value);} );
 					file_gui.add( params, 'clip' ).name( 'Section view' ).onChange( function ( value ) {
 						scene.traverse((obj) => {
@@ -1354,7 +1366,6 @@ function App() {
 					//experimental.add( params, 'bounding_box').name('Move').onChange( function( value ){ addBoundingBox(fileTemplate);} );
 					//experimental.add( params, 'adjust_fps').name('Adjust FPS').onChange( function( value ){ checkFPS(20, appParams.threshold, 100, fileTemplate);} );
 					file_gui.add( params, 'explode').name('Explode').onChange( function( value ){ explode(fileTemplate);} );
-					*/
 		
 					console.log("Reading file " + fileName);
 					reader.onload = (event) => {
