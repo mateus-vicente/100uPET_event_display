@@ -63,7 +63,7 @@ const params = {
 	z_offset: '0',
 	LUT: 'viridis',
 	alphaHash: true,
-	alpha: 0.5,
+	//alpha: 0.5,
 	taa: true,
 	sampleLevel: 2,
 	min_scale_factor: appParams.threshold,	
@@ -252,6 +252,7 @@ const renderer = new THREE.WebGLRenderer( { antialias: true } );
 renderer.setPixelRatio( window.devicePixelRatio );
 renderer.setSize( window.innerWidth, window.innerHeight );
 renderer.setClearColor(appParams.backgroundColor);
+renderer.localClippingEnabled = true;
 document.body.appendChild( renderer.domElement );
 
 window.addEventListener('resize', function () {
@@ -325,25 +326,38 @@ var gui = new GUI();
 var app = gui.addFolder('App control');
 app.close();
 
-var file_io = app.addFolder('File In/Out');
-var file_loader = file_io.addFolder('Loading');
+var file_loader = app.addFolder('File loader');
 var thresholdControl;
 var voxelsNumControl;
 function updateControls() {
-	if (thresholdControl && file_loader.__ul.contains(thresholdControl.domElement)) file_loader.remove(thresholdControl);
-	if (voxelsNumControl && file_loader.__ul.contains(voxelsNumControl.domElement)) file_loader.remove(voxelsNumControl);
+	//if (thresholdControl && file_loader.__ul.contains(thresholdControl.domElement)) file_loader.remove(thresholdControl);
+	//if (voxelsNumControl && file_loader.__ul.contains(voxelsNumControl.domElement)) file_loader.remove(voxelsNumControl);
 
-	if (appParams.loader === 'Voxel threshold') thresholdControl = file_loader.add(appParams, 'threshold', 0, 100).name('Voxel threshold');
-	else if (appParams.loader === 'Num of voxels') voxelsNumControl = file_loader.add(appParams, 'voxels_num', appParams.voxels_num).name('# Voxels');
+	//if (appParams.loader === 'Voxel threshold') thresholdControl = file_loader.add(appParams, 'threshold', 0, 100).name('Voxel threshold');
+	//else if (appParams.loader === 'Num of voxels') voxelsNumControl = file_loader.add(appParams, 'voxels_num', appParams.voxels_num).name('# Voxels');
+	if (appParams.loader === 'Voxel threshold') {
+		threshold_control.enable(true);
+		voxels_control.enable(false);
+	}
+	else if (appParams.loader === 'Num of voxels') {
+		threshold_control.enable(false);
+		voxels_control.enable(true);
+	}
+	else {
+		threshold_control.enable(false);
+		voxels_control.enable(false);
+	}
 }
-file_loader.add(appParams, 'loader', ['Voxel threshold', 'Num of voxels', 'Instanced voxels']).name('Loader type');//.onChange(updateControls);
-file_loader.add(appParams, 'threshold', 0, 100).name('Voxel threshold');
-file_loader.add(appParams, 'voxels_num', appParams.voxels_num).name('# Voxels');
+file_loader.add(appParams, 'loader', ['Voxel threshold', 'Num of voxels', 'Instanced voxels']).name('Loader type').onChange(updateControls);
+var threshold_control = file_loader.add(appParams, 'threshold', 0, 100).name('Voxel threshold');
+threshold_control.enable(false);
+var voxels_control = file_loader.add(appParams, 'voxels_num', appParams.voxels_num).name('# Voxels');
+voxels_control.enable(false);
 // Call updateControls initially to set the correct control based on the initial value of 'loader'
-//updateControls();
+updateControls();
 
 var display = app.addFolder('Display');
-var appear = display.addFolder('Display');
+var appear = display.addFolder('Appearance');
 //display.add({ useHighPerformance: true }, 'useHighPerformance').onChange(setRendererPreference);
 appear.add( appParams, 'light1',0,1).name('light1').onChange(value => { light1.intensity = value } );
 appear.add( appParams, 'light2',0,1).name('light2').onChange(value => { light2.intensity = value } );
@@ -364,7 +378,7 @@ anim.close();
 
 display.close();
 
-var section = app.addFolder('Section view');
+var section = gui.addFolder('Cross-section view');
 //clip.add( params, 'clip_voxels' ).name( 'clip LOR voxels' ).onChange( function ( value ) {
 //	if(value)   voxels_mesh.material.clippingPlanes = clipPlanes;
 //	else voxels_mesh.material.clippingPlanes = null;
@@ -439,6 +453,8 @@ hide.add(config_scanner_vis, 'toggleScaner1').name('Bottom tower');
 hide.add(config_scanner_vis, 'toggleScaner2').name('Right tower');
 hide.add(config_scanner_vis, 'toggleScaner3').name('Left tower');
 scanner.add( config_scanner_vis, 'explode').name('Explode').onChange( function( value ){ explode("Scanner");} );
+hide.close();
+scanner.close();
 //*/
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -478,7 +494,7 @@ function loadGenericTexture_instancedMesh(fileTemplate, texture_array, histogram
 		color_value = LUT( Math.ceil( ((i - offset) / (maxValue - offset)) * 255) );
 		const voxelMaterial = new THREE.MeshBasicMaterial({ clippingPlanes: clipPlanes,
 															clipIntersection: params.clipIntersection, 
-															side: THREE.DoubleSide,
+															//side: THREE.FrontSide,
 															depthWrite: params.depth_write,
 															color: color_value, 
 															//transparent: true });
@@ -1132,11 +1148,11 @@ function App() {
 
 			//const gui2 = new GUI();
 
-			var hash = app.addFolder('Alpha hash');
-			hash.add( params, 'alpha', 0, 1 ).onChange( onMaterialUpdate );
+			//var hash = app.addFolder('Alpha hash');
+			//hash.add( params, 'alpha', 0, 1 ).onChange( onMaterialUpdate );
 			//hash.add( params, 'alphaHash' ).onChange( onMaterialUpdate );
 
-			const taaFolder = hash.addFolder( 'Temporal Anti-Aliasing' );
+			const taaFolder = gui.addFolder( 'Temporal Anti-Aliasing' );
 
 			taaFolder.add( params, 'taa' ).name( 'enabled' ).onChange( () => {
 
@@ -1187,36 +1203,23 @@ function App() {
 		}
 
 		function animate() {
-
 			requestAnimationFrame( animate );
-
 			controls.update();
-
 			render();
-
 			stats.update();
-
 		}
 
 		function render() {
 			renderer.clear();
-
 			if ( needsUpdate ) {
-
 				taaRenderPass.accumulate = false;
 				taaRenderPass.sampleLevel = 0;
-
 				needsUpdate = false;
-
 			} else {
-
 				taaRenderPass.accumulate = true;
 				taaRenderPass.sampleLevel = params.sampleLevel;
-
 			}
-
 			composer.render();
-
 		}
 
 		function setXY() {
@@ -1512,7 +1515,7 @@ function App() {
 			// Cleanup
 			// You may want to remove event listeners or perform other cleanup tasks here
 		};
-	}, []);
+	}, [appParams, params]);
 	
 	return (
 		<div className="App">
