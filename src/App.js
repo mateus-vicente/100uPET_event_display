@@ -17,15 +17,15 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 var stats = new Stats();
 stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
-stats.domElement.style.cssText = 'position:absolute;top:44px;left:0px;';
+stats.domElement.style.cssText = 'position:absolute;top:35px;left:0px;';
 document.body.appendChild(stats.dom);
 var stats1 = new Stats();
 stats1.showPanel(1); // 0: fps, 1: ms, 2: mb, 3+: custom
-stats1.domElement.style.cssText = 'position:absolute;top:44px;left:80px;';
+stats1.domElement.style.cssText = 'position:absolute;top:35px;left:80px;';
 document.body.appendChild(stats1.dom);
 var stats2 = new Stats();
 stats2.showPanel(2); // 0: fps, 1: ms, 2: mb, 3+: custom
-stats2.domElement.style.cssText = 'position:absolute;top:44px;left:160px;';
+stats2.domElement.style.cssText = 'position:absolute;top:35px;left:160px;';
 document.body.appendChild(stats2.dom);
 
 const scale_factor = 10; // to convert unit from from mm to 0.1 mm (ex. 0.1 mm pixels x 10 turns to 1 0.1 mm)
@@ -64,7 +64,7 @@ const params = {
 	LUT: 'viridis',
 	alphaHash: true,
 	//alpha: 0.5,
-	taa: true,
+	taa: false,
 	sampleLevel: 2,
 	min_scale_factor: appParams.threshold,	
 	A: 0.3,
@@ -250,7 +250,7 @@ document.body.appendChild(renderer.domElement);
 
 const renderer = new THREE.WebGLRenderer( { antialias: true } );
 renderer.setPixelRatio( window.devicePixelRatio );
-renderer.setSize( window.innerWidth, window.innerHeight );
+renderer.setSize( window.innerWidth, window.innerHeight - 35 );
 renderer.setClearColor(appParams.backgroundColor);
 renderer.localClippingEnabled = true;
 document.body.appendChild( renderer.domElement );
@@ -1124,9 +1124,10 @@ function App() {
 			composer = new EffectComposer( renderer );
 
 			renderPass = new RenderPass( scene, camera );
-			renderPass.enabled = false;
+			renderPass.enabled = true;
 
 			taaRenderPass = new TAARenderPass( scene, camera );
+			taaRenderPass.enabled = false;
 
 			outputPass = new OutputPass();
 
@@ -1207,6 +1208,8 @@ function App() {
 			controls.update();
 			render();
 			stats.update();
+			stats1.update();
+			stats2.update();
 		}
 
 		function render() {
@@ -1303,16 +1306,20 @@ function App() {
 					}
 		
 					var file_gui = gui.addFolder(fileTemplate);
+					file_gui.add( params, 'visible').name('Visible').onChange( function( value ){ change_visibility(fileTemplate, value);} );
 					//var file_gui = gui.addFolder(fileTemplate + " [" + params.width_X + "x" + params.width_Y + "x" + params.width_Z + "]");
-					file_gui.add( params, "voxel_size", params.voxel_size).name("Voxel size [mm]").onFinishChange( function( value ) {change_voxel_size(fileTemplate, value);});
-					file_gui.add( params, 'LUT', ['jet','fire','viridis','5ramps'] ).name( fileTemplate + 'LUT' ).onChange( function( value ){change_LUT(fileTemplate, value);} );
+					var voxel_folder = file_gui.addFolder('Voxels control');
+					voxel_folder.add( params, "voxel_size", params.voxel_size).name("Voxel size [mm]").onFinishChange( function( value ) {change_voxel_size(fileTemplate, value);});
+					voxel_folder.close();
+					var material_folder = file_gui.addFolder('Volume rendering');
+					material_folder.add( params, 'LUT', ['jet','fire','viridis','5ramps'] ).name( fileTemplate + 'LUT' ).onChange( function( value ){change_LUT(fileTemplate, value);} );
 					///*
-					file_gui.add( params, 'depth_write').onChange(function( value ) {
+					material_folder.add( params, 'depth_write').onChange(function( value ) {
 						scene.traverse(function(child) {
 							if (child instanceof THREE.Mesh && child.name == fileTemplate) child.material.depthWrite = params.depth_write;
 						});
 					});
-					file_gui.add( params, 'color_offset').name('Color offset').onChange(value => {
+					material_folder.add( params, 'color_offset').name('Color offset').onChange(value => {
 						params.color_offset = value;
 						if(params.color_offset) offset = maxValue * params.min_scale_factor / 100;
 						if(!params.color_offset) offset = minValue;
@@ -1328,10 +1335,11 @@ function App() {
 						});
 					} );
 					//*/
-					file_gui.add( params, 'alphaHash' ).name( 'Alpha hash' ).onChange( function( value ){change_alpha_hash(fileTemplate, value);} );
-					file_gui.add( params, 'min_scale_factor', min_visibility_control, 100 ).step( 0.1 ).name( 'Visibility cut [%]' ).onChange( function( value ){change_min_transp(fileTemplate, value);} );
-					file_gui.add( params, 'A', 0, 100 ).step( 0.01 ).name( 'weight' ).onChange( function( value ){change_transp_scale(fileTemplate, value);} );
-					file_gui.add( params, 'clip' ).name( 'Section view' ).onChange( function ( value ) {
+					material_folder.add( params, 'alphaHash' ).name( 'Alpha hash' ).onChange( function( value ){change_alpha_hash(fileTemplate, value);} );
+					material_folder.add( params, 'min_scale_factor', min_visibility_control, 100 ).step( 0.1 ).name( 'Visibility cut [%]' ).onChange( function( value ){change_min_transp(fileTemplate, value);} );
+					material_folder.add( params, 'A', 0, 100 ).step( 0.01 ).name( 'weight' ).onChange( function( value ){change_transp_scale(fileTemplate, value);} );
+					var section_folder = file_gui.addFolder('Cross-section config');
+					section_folder.add( params, 'clip' ).name( 'Section view' ).onChange( function ( value ) {
 						scene.traverse((obj) => {
 							if (obj instanceof THREE.Mesh && obj.name == fileTemplate){
 								if(value) obj.material.clippingPlanes = clipPlanes;
@@ -1339,32 +1347,35 @@ function App() {
 							}
 						});
 					} );
-					file_gui.add( params, 'clipIntersection' ).name( 'Inverted section' ).onChange( function ( value ) {
+					section_folder.add( params, 'clipIntersection' ).name( 'Inverted section' ).onChange( function ( value ) {
 						scene.traverse(function(obj){
 							if(obj.type === 'Mesh' && obj.name == fileTemplate){
 								obj.material.clipIntersection = value;
 							}
 						});
 					} );
-					file_gui.add( params, 'visible').name('Visible').onChange( function( value ){ change_visibility(fileTemplate, value);} );
-					file_gui.add( params, 'wireframe_visible').name('Wireframe visible').onChange(value => {
+					section_folder.close();
+					var wire_folder = file_gui.addFolder('Bounding box wireframe');
+					wire_folder.add( params, 'wireframe_visible').name('Wireframe visible').onChange(value => {
 						scene.traverse((obj) => {
 							if (obj instanceof THREE.Mesh && obj.name == fileTemplate + '-wireframe'){
 								obj.visible = value;
 							}
 						});
 					});
-					file_gui.addColor(params, 'wireframe_color').name('Wireframe color').onChange((colorValue) => {
+					wire_folder.addColor(params, 'wireframe_color').name('Wireframe color').onChange((colorValue) => {
 						scene.traverse((obj) => {
 							if (obj instanceof THREE.Mesh && obj.name == fileTemplate + '-wireframe'){
 								obj.material.color = new THREE.Color(colorValue);
 							}
 						});
 					} );
+					wire_folder.close();
 					var xyz_offset = file_gui.addFolder('XYZ offset');
 					xyz_offset.add( params, 'x_offset').name('X offset').onFinishChange( function( value ) { x_move(fileTemplate, value) } );
 					xyz_offset.add( params, 'y_offset').name('Y offset').onFinishChange( function( value ) { y_move(fileTemplate, value) } );
 					xyz_offset.add( params, 'z_offset').name('Z offset').onFinishChange( function( value ) { z_move(fileTemplate, value) } );
+					xyz_offset.close();
 					//var experimental = file_gui.addFolder('Experimental');
 					//experimental.add( params, 'bounding_box').name('Move').onChange( function( value ){ addBoundingBox(fileTemplate);} );
 					//experimental.add( params, 'adjust_fps').name('Adjust FPS').onChange( function( value ){ checkFPS(20, appParams.threshold, 100, fileTemplate);} );
@@ -1518,13 +1529,11 @@ function App() {
 	}, [appParams, params]);
 	
 	return (
-		<div className="App">
-			<header className="App-header">
-				{/* Replace this part with your Three.js rendering canvas */}
-				<canvas ref={canvasRef}></canvas>
-	
+		<div className="App" style={{ height: '35px' }}>
+			<header className="App-header" style={{ backgroundColor: '#ffffff',display: 'flex', alignItems: 'center' }}>
+
 				{/* HTML elements and buttons */}
-				<div>
+				<div style={{ paddingTop: '10px' }}>
 					<label htmlFor="file_GEN">Open file</label>
 					<input type="file" name="file_GEN" id="file_GEN" label="LOR GEN file" />
 					<label htmlFor="file_GEN">(Formats supported: 3dm, epd)</label>
