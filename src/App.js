@@ -17,7 +17,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 var stats = new Stats();
 stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
-stats.domElement.style.cssText = 'position:absolute;top:44px;left:0px;';
+stats.domElement.style.cssText = 'position:absolute;top:0px;left:0px;';
 document.body.appendChild(stats.dom);
 //var stats1 = new Stats();
 //stats1.showPanel(1); // 0: fps, 1: ms, 2: mb, 3+: custom
@@ -69,7 +69,7 @@ const params = {
 	min_scale_factor: appParams.threshold,	
 	A: 0.3,
 	depth_write: true,
-	color_offset: false,
+	color_offset: true,
 	visible: true,
 	wireframe_color: 0x281f23,
 	wireframe_visible: false,
@@ -192,9 +192,9 @@ function setZX() {
 	camera.lookAt(new THREE.Vector3(0, 0, 0));
 };
 function set45() {
-	camera.position.x = -580;
-	camera.position.y = 580;
-	camera.position.z = -580;
+	camera.position.x = -2500;
+	camera.position.y = 2500;
+	camera.position.z = -2500;
 	camera.lookAt( scene.position );
 }
 function updateRendererInfo() {
@@ -220,7 +220,7 @@ const scene = new THREE.Scene();
 var camera = new THREE.PerspectiveCamera( 20, window.innerWidth / window.innerHeight, 0.1, 100000 );
 //var camera = new THREE.PerspectiveCamera(window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, 0.1, 100000);
 //var camera = new THREE.PerspectiveCamera( 40, window.innerWidth / window.innerHeight, 0.1, 1000000 );
-camera.position.set(-5000, 1000, 1000);
+camera.position.set(-3500, 400, 1000);
 //camera.zoom = 0.5;
 camera.updateProjectionMatrix();
 
@@ -250,7 +250,7 @@ document.body.appendChild(renderer.domElement);
 
 const renderer = new THREE.WebGLRenderer( { antialias: true } );
 renderer.setPixelRatio( window.devicePixelRatio );
-renderer.setSize( window.innerWidth, window.innerHeight - 60);
+renderer.setSize( window.innerWidth, window.innerHeight - 45);
 renderer.setClearColor(appParams.backgroundColor);
 renderer.localClippingEnabled = true;
 document.body.appendChild( renderer.domElement );
@@ -369,6 +369,7 @@ appear.addColor(appParams, 'backgroundColor').name('Background color').onChange(
 	renderer.setClearColor(backgroundColor);
 	console.log(backgroundColor);
 });
+appear.close();
 var anim = display.addFolder('Animation');
 // TODO
 anim.add( appParams, 'scene_anim', appParams.scene_anim).name('Animation');//.onChange(value => {
@@ -530,10 +531,11 @@ function loadGenericTexture_instancedMesh(fileTemplate, texture_array, histogram
 			 			   y * ((params.voxel_size + 0.0) * scale_factor) - (params.width_Y/2)*((params.voxel_size + 0.0) * scale_factor), 
 						   z * ((params.voxel_size + 0.0) * scale_factor) - (params.width_Z/2)*((params.voxel_size + 0.0) * scale_factor));
 	 	dummy.updateMatrix();
-		voxelMeshes[index_value].setMatrixAt(index_array[index_value], dummy.matrix);
-	 	index_array[index_value]++;
-
-		voxelMeshes[index_value].instanceMatrix.needsUpdate = true;
+		if (voxelMeshes[index_value]){
+			voxelMeshes[index_value].setMatrixAt(index_array[index_value], dummy.matrix);
+	 		index_array[index_value]++;
+			voxelMeshes[index_value].instanceMatrix.needsUpdate = true;
+		}
 	}
 }
 
@@ -1153,7 +1155,7 @@ function App() {
 			//hash.add( params, 'alpha', 0, 1 ).onChange( onMaterialUpdate );
 			//hash.add( params, 'alphaHash' ).onChange( onMaterialUpdate );
 
-			const taaFolder = gui.addFolder( 'Temporal Anti-Aliasing' );
+			const taaFolder = display.addFolder( 'Temporal Anti-Aliasing' );
 
 			taaFolder.add( params, 'taa' ).name( 'enabled' ).onChange( () => {
 
@@ -1169,6 +1171,7 @@ function App() {
 			} );
 
 			const sampleLevelCtrl = taaFolder.add( params, 'sampleLevel', 0, 6, 1 ).onChange( () => ( needsUpdate = true ) );
+			sampleLevelCtrl.enable( params.taa );
 
 			//
 
@@ -1530,12 +1533,12 @@ function App() {
 	return (
 		<div className="App">
 			<header className="App-header" style={{ backgroundColor: '#000000' }}>
-				<div>
+				<div style={{position: 'absolute',left: 100 }}>
 					<label htmlFor="file_GEN" style={{ color: 'white' }}>Open file</label>
 					<input type="file" name="file_GEN" id="file_GEN" label="LOR GEN file" />
 					<label htmlFor="file_GEN" style={{ color: 'white' }}>(Formats supported: 3dm, epd)</label>
 				</div>
-				<div>
+				<div style={{position: 'absolute',left: 100, top: 20 }}>
 					<button onClick={updateRendererInfo}>Show stats</button>
 					<button onClick={setXY}>XY</button>
 					<button onClick={setYZ}>YZ</button>
@@ -1544,7 +1547,7 @@ function App() {
 					<button onClick={set45}>45</button>
 				</div>
 				<canvas ref={canvasRef} 
-						style={{ height: 50 }}
+						style={{ height: 45 }}
       					//	position: 'absolute',
       					//	top: 0,
       					//	left: 0,
