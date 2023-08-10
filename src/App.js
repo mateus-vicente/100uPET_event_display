@@ -567,7 +567,6 @@ function loadGenericTexture(fileTemplate, texture_array) {
 		var x = texture_array[entry].x;
 		var y = texture_array[entry].y;
 		var z = texture_array[entry].z;
-		console.log(x,y,z);
 		var value = texture_array[entry].value;
 		var threshold_value; 
 		if (appParams.loader === 'Voxel threshold') threshold_value = maxValue * appParams.threshold / 100; 
@@ -1230,61 +1229,6 @@ function App() {
 			composer.render();
 		}
 
-		function setXY() {
-			const length = camera.position.length();
-			camera.position.x = 0;
-			camera.position.y = 0;
-			camera.position.z = length;
-			camera.up = new THREE.Vector3(0, 1, 0);
-			camera.lookAt(new THREE.Vector3(0, 0, 0));
-		};
-		function setYZ() {
-			const length = camera.position.length();
-			camera.position.x = -length;
-			camera.position.y = 0;
-			camera.position.z = 0;
-			camera.up = new THREE.Vector3(0, 1, 0);
-			camera.lookAt(new THREE.Vector3(0, 0, 0));
-		};
-		function settYZ() {
-			const length = camera.position.length();
-			camera.position.x = length;
-			camera.position.y = 0;
-			camera.position.z = 0;
-			camera.up = new THREE.Vector3(0, 1, 0);
-			camera.lookAt(new THREE.Vector3(0, 0, 0));
-		};
-		function setZX() {
-			const length = camera.position.length();
-			camera.position.x = 0;
-			camera.position.y = length;
-			camera.position.z = 0;
-			camera.up = new THREE.Vector3(1, 0, 0);
-			camera.lookAt(new THREE.Vector3(0, 0, 0));
-		};
-		function set45() {
-			camera.position.x = -580;
-			camera.position.y = 580;
-			camera.position.z = -580;
-			camera.lookAt( scene.position );
-		}
-		/*
-		function updateRendererInfo() {
-			console.log(camera.position);
-			var info = renderer.info;
-			for (let prop in info.render) {
-				console.log(prop + " " + info.render[prop]);
-			}
-			if (info.memory) {
-				for (let prop in info.memory) {
-					console.log(prop + " " + info.memory[prop]);
-				}
-			}
-			//console.log("Voxels loaded: ", num_voxels);
-		}
-		*/
-
-
 		document.getElementById('file_GEN').onchange = function () {
 			var generic_allLines;
 			var file_generic = this.files[0];
@@ -1421,10 +1365,8 @@ function App() {
 						console.log('Texture minimum value:', minValue);
 						if(appParams.loader != 'Instanced voxels') {
 							loadGenericTexture(fileTemplate, texture_array);
-							console.log('HERE');
 						}
 						else {
-							console.log('HERE2');
 							for (const entry of texture_array) {
 								const normalizedValue = (entry.value - minValue) / (maxValue - minValue);
 								const index = Math.ceil(normalizedValue * 255);
