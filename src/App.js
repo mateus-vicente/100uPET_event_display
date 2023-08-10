@@ -469,6 +469,8 @@ scanner.close();
 //////////////////////////////////////////////////		   TEXTURE LOADER			//////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+let progressBarDiv;
+
 const voxelMeshes = [];
 function loadGenericTexture_instancedMesh(fileTemplate, texture_array, histogram_array) {
 	let worldcube;
@@ -520,7 +522,10 @@ function loadGenericTexture_instancedMesh(fileTemplate, texture_array, histogram
 	var index = 0;
 	var index_value = 0;
 	const index_array = new Array(256).fill(0);
+	//progressBarDiv.innerText = 'Loading... ' + ' starting';
 	for (var entry = 0; entry < texture_array.length -1; entry = entry + 1) {
+		progressBarDiv.innerText = 'Loading... ' + Math.round((entry + 1) / texture_array.length * 100) + '%';
+		//console.log(Math.round((entry + 1) / texture_array.length * 100));
 		var x = texture_array[entry].x;
 		var y = texture_array[entry].y;
 		var z = texture_array[entry].z;
@@ -539,6 +544,7 @@ function loadGenericTexture_instancedMesh(fileTemplate, texture_array, histogram
 			voxelMeshes[index_value].instanceMatrix.needsUpdate = true;
 		}
 	}
+	document.body.removeChild( progressBarDiv );
 }
 
 var num_voxels = 0;
@@ -1332,6 +1338,18 @@ function App() {
 					//experimental.add( params, 'adjust_fps').name('Adjust FPS').onChange( function( value ){ checkFPS(20, appParams.threshold, 100, fileTemplate);} );
 					file_gui.add( params, 'explode').name('Explode').onChange( function( value ){ explode(fileTemplate);} );
 		
+					progressBarDiv = document.createElement( 'div' );
+					progressBarDiv.innerText = 'Loading file...';
+					progressBarDiv.style.fontSize = '6em';
+					progressBarDiv.style.color = '#FFFFFF';
+					progressBarDiv.style.display = 'block';
+					progressBarDiv.style.position = 'absolute';
+					progressBarDiv.style.top = '50%';
+					progressBarDiv.style.width = '100%';
+					progressBarDiv.style.textAlign = 'center';
+
+					document.body.appendChild( progressBarDiv );
+
 					console.log("Reading file " + fileName);
 					reader.onload = (event) => {
 						const histogram_array = new Array(256).fill(0);
@@ -1363,6 +1381,7 @@ function App() {
 						minValue = texture_array[texture_array.length - 1].value;
 						console.log('Texture maximum value:', maxValue);
 						console.log('Texture minimum value:', minValue);
+
 						if(appParams.loader != 'Instanced voxels') {
 							loadGenericTexture(fileTemplate, texture_array);
 						}
