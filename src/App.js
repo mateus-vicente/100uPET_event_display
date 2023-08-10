@@ -17,7 +17,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 var stats = new Stats();
 stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
-stats.domElement.style.cssText = 'position:absolute;top:0px;left:0px;';
+stats.domElement.style.cssText = 'position:absolute;top:0px;left:10px;';
 document.body.appendChild(stats.dom);
 //var stats1 = new Stats();
 //stats1.showPanel(1); // 0: fps, 1: ms, 2: mb, 3+: custom
@@ -41,15 +41,15 @@ const appParams = {
 	scene_anim: true,			//TODO
 	implosion_time: 2000, 		// [ms]
 	explosion_time: 1000, 		// [ms]
-	light1: 0.4, 		// [ms]
-	light2: 0.6, 		// [ms]
+	light1: 1, 		// [ms]
+	light2: 0, 		// [ms]
 	rotationEnabled: false,
 	backgroundColor: 0x000000,
 	remove_LOR_EPD: function(){},
 
-	planeConstant_X: 0,
-	planeConstant_Y: 0,
-	planeConstant_Z: 0,
+	planeConstant_X: 550,
+	planeConstant_Y: 550,
+	planeConstant_Z: 550,
 	showHelpers: false
 };
 
@@ -199,6 +199,7 @@ function set45() {
 }
 function updateRendererInfo() {
 	console.log(camera.position);
+	console.log(controls.target.y);
 	var info = renderer.info;
 	for (let prop in info.render) {
 		console.log(prop + " " + info.render[prop]);
@@ -220,7 +221,7 @@ const scene = new THREE.Scene();
 var camera = new THREE.PerspectiveCamera( 20, window.innerWidth / window.innerHeight, 0.1, 100000 );
 //var camera = new THREE.PerspectiveCamera(window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, 0.1, 100000);
 //var camera = new THREE.PerspectiveCamera( 40, window.innerWidth / window.innerHeight, 0.1, 1000000 );
-camera.position.set(-3500, 400, 1000);
+camera.position.set(-3400, 500, 643);
 //camera.zoom = 0.5;
 camera.updateProjectionMatrix();
 
@@ -1140,6 +1141,7 @@ function App() {
 			//
 
 			controls = new OrbitControls( camera, renderer.domElement );
+			controls.target.y = -45;
 			controls.enableDamping = true;
 			//controls.enableZoom = false;
 			//controls.enablePan = false;
@@ -1265,6 +1267,7 @@ function App() {
 			camera.position.z = -580;
 			camera.lookAt( scene.position );
 		}
+		/*
 		function updateRendererInfo() {
 			console.log(camera.position);
 			var info = renderer.info;
@@ -1278,6 +1281,7 @@ function App() {
 			}
 			//console.log("Voxels loaded: ", num_voxels);
 		}
+		*/
 
 
 		document.getElementById('file_GEN').onchange = function () {
