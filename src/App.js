@@ -99,10 +99,10 @@ var scannerobj1= new THREE.Object3D();
 var scannerobj2= new THREE.Object3D();
 var scannerobj3= new THREE.Object3D();
 var config_scanner_vis = {
-	scaner_transparency: 0.5,
+	scaner_transparency: 0.0015,
 	side: sideOptions['DoubleSide'],
-	wire_frame: false,
-	depth_write: true,
+	wire_frame: true,
+	depth_write: false,
 	Visible: true,
 	clip_scanner: true,
 	scannerIntersection: false,
@@ -279,6 +279,7 @@ loader.load( parcelPath.href, function ( gltf ) {
 			child.name = "Scanner";
 			child.material.depthWrite = config_scanner_vis.depth_write;
 			child.material.transparent = true;
+			child.material.wireframe = true;
 			child.material.opacity = config_scanner_vis.scaner_transparency;
 			//child.material.format = THREE.RGBAFormat;
 			child.material.side = config_scanner_vis.side;
