@@ -17,16 +17,16 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 var stats = new Stats();
 stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
-stats.domElement.style.cssText = 'position:absolute;top:35px;left:0px;';
+stats.domElement.style.cssText = 'position:absolute;top:44px;left:0px;';
 document.body.appendChild(stats.dom);
-var stats1 = new Stats();
-stats1.showPanel(1); // 0: fps, 1: ms, 2: mb, 3+: custom
-stats1.domElement.style.cssText = 'position:absolute;top:35px;left:80px;';
-document.body.appendChild(stats1.dom);
-var stats2 = new Stats();
-stats2.showPanel(2); // 0: fps, 1: ms, 2: mb, 3+: custom
-stats2.domElement.style.cssText = 'position:absolute;top:35px;left:160px;';
-document.body.appendChild(stats2.dom);
+//var stats1 = new Stats();
+//stats1.showPanel(1); // 0: fps, 1: ms, 2: mb, 3+: custom
+//stats1.domElement.style.cssText = 'position:absolute;top:60px;left:80px;';
+//document.body.appendChild(stats1.dom);
+//var stats2 = new Stats();
+//stats2.showPanel(2); // 0: fps, 1: ms, 2: mb, 3+: custom
+//stats2.domElement.style.cssText = 'position:absolute;top:60px;left:160px;';
+//document.body.appendChild(stats2.dom);
 
 const scale_factor = 10; // to convert unit from from mm to 0.1 mm (ex. 0.1 mm pixels x 10 turns to 1 0.1 mm)
 var maxValue = -Infinity;
@@ -250,7 +250,7 @@ document.body.appendChild(renderer.domElement);
 
 const renderer = new THREE.WebGLRenderer( { antialias: true } );
 renderer.setPixelRatio( window.devicePixelRatio );
-renderer.setSize( window.innerWidth, window.innerHeight - 35 );
+renderer.setSize( window.innerWidth, window.innerHeight - 60);
 renderer.setClearColor(appParams.backgroundColor);
 renderer.localClippingEnabled = true;
 document.body.appendChild( renderer.domElement );
@@ -1208,8 +1208,7 @@ function App() {
 			controls.update();
 			render();
 			stats.update();
-			stats1.update();
-			stats2.update();
+			//stats1.update();
 		}
 
 		function render() {
@@ -1306,8 +1305,8 @@ function App() {
 					}
 		
 					var file_gui = gui.addFolder(fileTemplate);
-					file_gui.add( params, 'visible').name('Visible').onChange( function( value ){ change_visibility(fileTemplate, value);} );
 					//var file_gui = gui.addFolder(fileTemplate + " [" + params.width_X + "x" + params.width_Y + "x" + params.width_Z + "]");
+					file_gui.add( params, 'visible').name('Visible').onChange( function( value ){ change_visibility(fileTemplate, value);} );
 					var voxel_folder = file_gui.addFolder('Voxels control');
 					voxel_folder.add( params, "voxel_size", params.voxel_size).name("Voxel size [mm]").onFinishChange( function( value ) {change_voxel_size(fileTemplate, value);});
 					voxel_folder.close();
@@ -1355,7 +1354,7 @@ function App() {
 						});
 					} );
 					section_folder.close();
-					var wire_folder = file_gui.addFolder('Bounding box wireframe');
+ 					var wire_folder = file_gui.addFolder('Bounding box wireframe');
 					wire_folder.add( params, 'wireframe_visible').name('Wireframe visible').onChange(value => {
 						scene.traverse((obj) => {
 							if (obj instanceof THREE.Mesh && obj.name == fileTemplate + '-wireframe'){
@@ -1371,7 +1370,7 @@ function App() {
 						});
 					} );
 					wire_folder.close();
-					var xyz_offset = file_gui.addFolder('XYZ offset');
+ 					var xyz_offset = file_gui.addFolder('XYZ offset');
 					xyz_offset.add( params, 'x_offset').name('X offset').onFinishChange( function( value ) { x_move(fileTemplate, value) } );
 					xyz_offset.add( params, 'y_offset').name('Y offset').onFinishChange( function( value ) { y_move(fileTemplate, value) } );
 					xyz_offset.add( params, 'z_offset').name('Z offset').onFinishChange( function( value ) { z_move(fileTemplate, value) } );
@@ -1529,14 +1528,12 @@ function App() {
 	}, [appParams, params]);
 	
 	return (
-		<div className="App" style={{ height: '35px' }}>
-			<header className="App-header" style={{ backgroundColor: '#ffffff',display: 'flex', alignItems: 'center' }}>
-
-				{/* HTML elements and buttons */}
-				<div style={{ paddingTop: '10px' }}>
-					<label htmlFor="file_GEN">Open file</label>
+		<div className="App">
+			<header className="App-header" style={{ backgroundColor: '#000000' }}>
+				<div>
+					<label htmlFor="file_GEN" style={{ color: 'white' }}>Open file</label>
 					<input type="file" name="file_GEN" id="file_GEN" label="LOR GEN file" />
-					<label htmlFor="file_GEN">(Formats supported: 3dm, epd)</label>
+					<label htmlFor="file_GEN" style={{ color: 'white' }}>(Formats supported: 3dm, epd)</label>
 				</div>
 				<div>
 					<button onClick={updateRendererInfo}>Show stats</button>
@@ -1546,6 +1543,15 @@ function App() {
 					<button onClick={setZX}>ZX</button>
 					<button onClick={set45}>45</button>
 				</div>
+				<canvas ref={canvasRef} 
+						style={{ height: 50 }}
+      					//	position: 'absolute',
+      					//	top: 0,
+      					//	left: 0,
+      					//	//zIndex: -1,
+      					//	//height: '100%', // Set canvas height to fill the header
+      					//}}
+				></canvas>
 			</header>
 		</div>
 	);
