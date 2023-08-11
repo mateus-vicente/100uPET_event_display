@@ -61,12 +61,14 @@ const params = {
 	x_offset: '0',
 	y_offset: '0',
 	z_offset: '0',
-	LUT: 'viridis',
+	LUT: 'jet',
+	//LUT: 'viridis',
 	alphaHash: true,
 	//alpha: 0.5,
 	taa: false,
 	sampleLevel: 2,
 	min_scale_factor: appParams.threshold,	
+	max_scale_factor: 100,	
 	A: 0.3,
 	depth_write: true,
 	color_offset: true,
@@ -217,12 +219,10 @@ function updateRendererInfo() {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const scene = new THREE.Scene();
-//var camera = new THREE.OrthographicCamera(window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, 0.1, 100000);
-var camera = new THREE.PerspectiveCamera( 20, window.innerWidth / window.innerHeight, 0.1, 100000 );
-//var camera = new THREE.PerspectiveCamera(window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, 0.1, 100000);
-//var camera = new THREE.PerspectiveCamera( 40, window.innerWidth / window.innerHeight, 0.1, 1000000 );
+var camera = new THREE.OrthographicCamera(window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, 0.1, 100000);
+//var camera = new THREE.PerspectiveCamera( 20, window.innerWidth / window.innerHeight, 0.1, 100000 );
 camera.position.set(-3400, 500, 643);
-//camera.zoom = 0.5;
+camera.zoom = 0.65;
 camera.updateProjectionMatrix();
 
 /*
@@ -496,12 +496,11 @@ function loadGenericTexture_instancedMesh(fileTemplate, texture_array, histogram
 	if(params.LUT == 'viridis') LUT = LUT_viridis_color;
 	if(params.LUT == '5ramps') LUT = LUT_5ramps_color;
 	for (let i = 0; i < histogram_array.length; i++) {
-		color_value = LUT( Math.ceil( ((i - offset) / (maxValue - offset)) * 255) );
 		const voxelMaterial = new THREE.MeshBasicMaterial({ clippingPlanes: clipPlanes,
 															clipIntersection: params.clipIntersection, 
 															//side: THREE.FrontSide,
 															depthWrite: params.depth_write,
-															color: color_value, 
+															color: LUT(i), 
 															//transparent: true });
 															alphaHash: params.alphaHash });
 		voxelMaterial.opacity = opacity_weight(i, 255, minValue, params.A);
@@ -524,6 +523,7 @@ function loadGenericTexture_instancedMesh(fileTemplate, texture_array, histogram
 	const index_array = new Array(256).fill(0);
 	//progressBarDiv.innerText = 'Loading... ' + ' starting';
 	for (var entry = 0; entry < texture_array.length -1; entry = entry + 1) {
+	//for (var entry = 0; entry < 100; entry = entry + 1) {
 		progressBarDiv.innerText = 'Loading... ' + Math.round((entry + 1) / texture_array.length * 100) + '%';
 		//console.log(Math.round((entry + 1) / texture_array.length * 100));
 		var x = texture_array[entry].x;
@@ -532,13 +532,16 @@ function loadGenericTexture_instancedMesh(fileTemplate, texture_array, histogram
 		var value = texture_array[entry].value;
 
 		index_value = Math.ceil( ((value - offset) / (maxValue - offset)) * 255);
+		//if(entry%10000 == 0)
+		//console.log(x, y, z, value, index_value);
 
 		var dummy = new THREE.Object3D();
-		dummy.position.set(x * ((params.voxel_size + 0.0) * scale_factor) - (params.width_X/2)*((params.voxel_size + 0.0) * scale_factor), 
-			 			   y * ((params.voxel_size + 0.0) * scale_factor) - (params.width_Y/2)*((params.voxel_size + 0.0) * scale_factor), 
-						   z * ((params.voxel_size + 0.0) * scale_factor) - (params.width_Z/2)*((params.voxel_size + 0.0) * scale_factor));
+		dummy.position.set(x * ((params.voxel_size) * scale_factor) - (params.width_X/2)*((params.voxel_size) * scale_factor), 
+			 			   y * ((params.voxel_size) * scale_factor) - (params.width_Y/2)*((params.voxel_size) * scale_factor), 
+						   z * ((params.voxel_size) * scale_factor) - (params.width_Z/2)*((params.voxel_size) * scale_factor));
 	 	dummy.updateMatrix();
 		if (voxelMeshes[index_value]){
+			//console.log(voxelMeshes[index_value].material.color);
 			voxelMeshes[index_value].setMatrixAt(index_array[index_value], dummy.matrix);
 	 		index_array[index_value]++;
 			voxelMeshes[index_value].instanceMatrix.needsUpdate = true;
@@ -612,6 +615,7 @@ function loadGenericTexture(fileTemplate, texture_array) {
 	}
 	implode(fileTemplate);
 	console.log("Voxels loaded: ", num_voxels);
+	document.body.removeChild( progressBarDiv );
 }
 
 function opacity_weight(x, maxValue, min, weight) {
@@ -671,84 +675,29 @@ function change_voxel_size (fileTemplate, value){
 	});
 }
 
-function change_LUT(fileTemplate, value) {
-	params.LUT = value;
+function update_material (fileTemplate, value ) {
 	if(params.color_offset) offset = maxValue * params.min_scale_factor / 100;
-	if(!params.color_offset) offset = minValue;
+	if(!params.color_offset) offset = minValue ;
+	var LUT;
+	if(params.LUT == 'jet') LUT = LUT_jet_color;
+	if(params.LUT == 'fire') LUT = LUT_fire_color;
+	if(params.LUT == 'viridis') LUT = LUT_viridis_color;
+	if(params.LUT == '5ramps') LUT = LUT_5ramps_color;
 	scene.traverse((object) => {
 		if (object instanceof THREE.Mesh) {
-			if (object.name == fileTemplate) {
-				if(params.LUT == 'jet') object.material.color = LUT_jet_color( Math.ceil(((object.userData.color_value - offset) / (maxValue - offset)) * 255) );
-				if(params.LUT == 'fire') object.material.color = LUT_fire_color( Math.ceil(((object.userData.color_value - offset) / (maxValue - offset)) * 255) );
-				if(params.LUT == 'viridis') object.material.color = LUT_viridis_color( Math.ceil(((object.userData.color_value - offset) / (maxValue - offset)) * 255) );
-				if(params.LUT == '5ramps') object.material.color = LUT_5ramps_color( Math.ceil(((object.userData.color_value - offset) / (maxValue - offset)) * 255));
-			}
-		}
-	});
-	/*
-	scene.traverse((object) => {
-		if (object instanceof THREE.Mesh) {
-			if (object.name == fileTemplate) {
-				if(params.LUT == 'jet') object.material.color = LUT_jet_color(object.userData.color_value);
-				if(params.LUT == 'fire') object.material.color = LUT_fire_color(object.userData.color_value);
-				if(params.LUT == 'viridis') object.material.color = LUT_viridis_color(object.userData.color_value);
-				if(params.LUT == '5ramps') object.material.color = LUT_5ramps_color(object.userData.color_value);
-			}
-		}
-	});
-	*/
-}
-
-function change_min_transp (fileTemplate, value ) {
-	params.min_scale_factor = value;
-	var voxels_n = 0;
-	scene.traverse((object) => {
-		if (object instanceof THREE.Mesh) {
-			if (object.name == fileTemplate && object.userData.color_value < maxValue * params.min_scale_factor / 100 ) {
+			if (object.name == fileTemplate && (object.userData.color_value < maxValue * params.min_scale_factor / 100 || !params.visible) ) {
 				object.visible = false;
 			}
 			if (object.name == fileTemplate && object.userData.color_value > maxValue * params.min_scale_factor / 100 && params.visible) {
 				object.visible = true;
-				voxels_n = voxels_n + 1;
-				if(params.color_offset) {
-					offset = maxValue * params.min_scale_factor / 100;
-					if(params.LUT == 'jet') object.material.color = LUT_jet_color( Math.ceil(((object.userData.color_value - offset) / (maxValue - offset)) * 255) );
-					if(params.LUT == 'fire') object.material.color = LUT_fire_color( Math.ceil(((object.userData.color_value - offset) / (maxValue - offset)) * 255) );
-					if(params.LUT == 'viridis') object.material.color = LUT_viridis_color( Math.ceil(((object.userData.color_value - offset) / (maxValue - offset)) * 255) );
-					if(params.LUT == '5ramps') object.material.color = LUT_5ramps_color( Math.ceil(((object.userData.color_value - offset) / (maxValue - offset)) * 255));
-				}
-				// TODO fix this opacity max and min range!!!
-				//object.material.opacity = opacity_weight(object.userData.color_value, maxValue, minValue * params.min_scale_factor / 100, params.A);
-			}
-		}
-	});
-	//console.log(voxels_n, " Voxels visible");
-}
-
-function change_transp_scale(fileTemplate, value ) {
-	params.A = value;
-	scene.traverse((object) => {
-		if (object instanceof THREE.Mesh) {
-			if (object.name == fileTemplate) {
-				// TODO fix this opacity max and min range!!!
+				var object_value = Math.ceil( object.userData.color_value / ( (params.max_scale_factor * maxValue / 100) - offset ) * 255 );
+				if(object_value > 255) object_value = 255;
+				object.material.color = LUT( object_value );
 				object.material.opacity = opacity_weight(object.userData.color_value, maxValue, minValue * params.min_scale_factor / 100, params.A);
 			}
 		}
 	});
-} 
-
-function change_visibility(fileTemplate, value) {
-	var threshold_value;
-	if (appParams.loader === 'Voxel threshold' || appParams.loader === 'Instanced voxels') threshold_value = maxValue * params.min_scale_factor / 100; 
-	else if (appParams.loader === 'Num of voxels') threshold_value = 0;
-	params.visible = value;
-	scene.traverse((object) => {
-		if (object instanceof THREE.Mesh) {
-			if (object.name == fileTemplate && object.userData.color_value > threshold_value) {
-				object.visible = params.visible;
-			}
-		}
-	});
+	//console.log(voxels_n, " Voxels visible");
 }
 
 let needsUpdate = false;
@@ -1090,46 +1039,6 @@ function App() {
 
 		function init() {
 
-			//camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.1, 100 );
-			//camera.position.set( amount, amount, amount );
-			//camera.lookAt( 0, 0, 0 );
-
-			//scene = new THREE.Scene();
-
-			//const geometry = new THREE.IcosahedronGeometry( 15 * scale_factor, 3 );
-
-			//material = new THREE.MeshStandardMaterial( {
-			//	color: 0xffffff,
-			//	alphaHash: params.alphaHash,
-			//	opacity: params.alpha
-			//} );
-
-			/*
-			mesh = new THREE.InstancedMesh( geometry, material, count );
-			let i = 0;
-			const offset2 = ( amount - 1 ) / 2;
-			const matrix = new THREE.Matrix4();
-			for ( let x = 0; x < amount; x ++ ) {
-				for ( let y = 0; y < amount; y ++ ) {
-					for ( let z = 0; z < amount; z ++ ) {
-						matrix.setPosition( (offset2 - x) * 300, (offset2 - y) * 300, (offset2 - z) * 300 );
-						mesh.setMatrixAt( i, matrix );
-						mesh.setColorAt( i, color.setHex( Math.random() * 0xffffff ) );
-						i ++;
-					}
-				}
-			}
-			scene.add( mesh );
-			*/
-
-			//const environment = new RoomEnvironment( renderer );
-			//const pmremGenerator = new THREE.PMREMGenerator( renderer );
-
-			//scene.environment = pmremGenerator.fromScene( environment ).texture;
-			//environment.dispose();
-
-			//
-
 			composer = new EffectComposer( renderer );
 
 			renderPass = new RenderPass( scene, camera );
@@ -1144,24 +1053,11 @@ function App() {
 			composer.addPass( taaRenderPass );
 			composer.addPass( outputPass );
 
-			//
-
 			controls = new OrbitControls( camera, renderer.domElement );
-			controls.target.y = -45;
 			controls.enableDamping = true;
-			//controls.enableZoom = false;
-			//controls.enablePan = false;
 			controls.dampingFactor = 0.5;
 
 			controls.addEventListener( 'change', () => ( needsUpdate = true ) );
-
-			//
-
-			//const gui2 = new GUI();
-
-			//var hash = app.addFolder('Alpha hash');
-			//hash.add( params, 'alpha', 0, 1 ).onChange( onMaterialUpdate );
-			//hash.add( params, 'alphaHash' ).onChange( onMaterialUpdate );
 
 			const taaFolder = display.addFolder( 'Temporal Anti-Aliasing' );
 
@@ -1169,8 +1065,6 @@ function App() {
 
 				renderPass.enabled = ! params.taa;
 				taaRenderPass.enabled = params.taa;
-
-				//renderer.setClearColor(appParams.backgroundColor);
 
 				sampleLevelCtrl.enable( params.taa );
 
@@ -1264,12 +1158,12 @@ function App() {
 		
 					var file_gui = gui.addFolder(fileTemplate);
 					//var file_gui = gui.addFolder(fileTemplate + " [" + params.width_X + "x" + params.width_Y + "x" + params.width_Z + "]");
-					file_gui.add( params, 'visible').name('Visible').onChange( function( value ){ change_visibility(fileTemplate, value);} );
+					file_gui.add( params, 'visible').name('Visible').onChange( function( value ){ update_material(fileTemplate, value);} );
 					var voxel_folder = file_gui.addFolder('Voxels control');
 					voxel_folder.add( params, "voxel_size", params.voxel_size).name("Voxel size [mm]").onFinishChange( function( value ) {change_voxel_size(fileTemplate, value);});
 					voxel_folder.close();
 					var material_folder = file_gui.addFolder('Volume rendering');
-					material_folder.add( params, 'LUT', ['jet','fire','viridis','5ramps'] ).name( fileTemplate + 'LUT' ).onChange( function( value ){change_LUT(fileTemplate, value);} );
+					material_folder.add( params, 'LUT', ['jet','fire','viridis','5ramps'] ).name( fileTemplate + 'LUT' ).onChange( function( value ){update_material(fileTemplate, value);} );
 					///*
 					material_folder.add( params, 'depth_write').onChange(function( value ) {
 						scene.traverse(function(child) {
@@ -1293,8 +1187,9 @@ function App() {
 					} );
 					//*/
 					material_folder.add( params, 'alphaHash' ).name( 'Alpha hash' ).onChange( function( value ){change_alpha_hash(fileTemplate, value);} );
-					material_folder.add( params, 'min_scale_factor', min_visibility_control, 100 ).step( 0.1 ).name( 'Visibility cut [%]' ).onChange( function( value ){change_min_transp(fileTemplate, value);} );
-					material_folder.add( params, 'A', 0, 100 ).step( 0.01 ).name( 'weight' ).onChange( function( value ){change_transp_scale(fileTemplate, value);} );
+					material_folder.add( params, 'min_scale_factor', min_visibility_control, 100 ).step( 0.1 ).name( 'Visibility cut [%]' ).onChange( function( value ){update_material(fileTemplate, value);} );
+					material_folder.add( params, 'max_scale_factor', min_visibility_control, 100 ).step( 0.1 ).name( 'Visibility ceiling [%]' ).onChange( function( value ){update_material(fileTemplate, value);} );
+					material_folder.add( params, 'A', 0, 100 ).step( 0.01 ).name( 'weight' ).onChange( function( value ){update_material(fileTemplate, value);} );
 					var section_folder = file_gui.addFolder('Cross-section config');
 					section_folder.add( params, 'clip' ).name( 'Section view' ).onChange( function ( value ) {
 						scene.traverse((obj) => {
@@ -1378,6 +1273,7 @@ function App() {
 						}
 						texture_array.sort((a, b) => b.value - a.value);
 						maxValue = texture_array[0].value;
+						//maxValue = 500;
 						minValue = texture_array[texture_array.length - 1].value;
 						console.log('Texture maximum value:', maxValue);
 						console.log('Texture minimum value:', minValue);
