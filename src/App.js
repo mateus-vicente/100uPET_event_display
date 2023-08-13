@@ -19,14 +19,6 @@ var stats = new Stats();
 stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
 stats.domElement.style.cssText = 'position:absolute;top:0px;left:10px;';
 document.body.appendChild(stats.dom);
-//var stats1 = new Stats();
-//stats1.showPanel(1); // 0: fps, 1: ms, 2: mb, 3+: custom
-//stats1.domElement.style.cssText = 'position:absolute;top:60px;left:80px;';
-//document.body.appendChild(stats1.dom);
-//var stats2 = new Stats();
-//stats2.showPanel(2); // 0: fps, 1: ms, 2: mb, 3+: custom
-//stats2.domElement.style.cssText = 'position:absolute;top:60px;left:160px;';
-//document.body.appendChild(stats2.dom);
 
 const scale_factor = 10; // to convert unit from from mm to 0.1 mm (ex. 0.1 mm pixels x 10 turns to 1 0.1 mm)
 var maxValue = -Infinity;
@@ -95,7 +87,6 @@ var sideOptions = {
 	'DoubleSide': THREE.DoubleSide
 };
 
-///*
 var scannerobj = new THREE.Object3D();
 var scannerobj1= new THREE.Object3D();
 var scannerobj2= new THREE.Object3D();
@@ -122,7 +113,6 @@ var config_scanner_vis = {
 		scannerobj3.visible = ! scannerobj3.visible;
 	}
 };
-//*/
 
 var config_voxel = {
 	voxel_transparency: 0.1,
@@ -678,6 +668,7 @@ function change_voxel_size (fileTemplate, value){
 function update_material (fileTemplate, value ) {
 	if(params.color_offset) offset = maxValue * params.min_scale_factor / 100;
 	if(!params.color_offset) offset = minValue ;
+	var maxOffset = params.max_scale_factor * maxValue / 100;
 	var LUT;
 	if(params.LUT == 'jet') LUT = LUT_jet_color;
 	if(params.LUT == 'fire') LUT = LUT_fire_color;
@@ -690,8 +681,10 @@ function update_material (fileTemplate, value ) {
 			}
 			if (object.name == fileTemplate && object.userData.color_value > maxValue * params.min_scale_factor / 100 && params.visible) {
 				object.visible = true;
-				var object_value = Math.ceil( object.userData.color_value / ( (params.max_scale_factor * maxValue / 100) - offset ) * 255 );
+				//var object_value = Math.ceil( object.userData.color_value / ( (params.max_scale_factor * maxValue / 100) - offset ) * 255 );
+				var object_value = Math.ceil( ( ( maxValue - minValue) * ( object.userData.color_value - offset) ) / ( maxOffset - minValue - offset ) ); 
 				if(object_value > 255) object_value = 255;
+				if(object_value < 0) object_value = 0;
 				object.material.color = LUT( object_value );
 				object.material.opacity = opacity_weight(object.userData.color_value, maxValue, minValue * params.min_scale_factor / 100, params.A);
 			}
